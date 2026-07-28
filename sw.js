@@ -1,4 +1,4 @@
-const CACHE_NOME = "ficha-procedimentos-v4";
+const CACHE_NOME = "ficha-procedimentos-v5";
 const ARQUIVOS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
