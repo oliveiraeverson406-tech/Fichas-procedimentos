@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -652,4 +654,660 @@ function mostrarAbaAtual(){
 
 function mostrarAbaSalvas(){
   document.getElementById("painelAtual").style.display = "none";
-  document.getElementById("painelSalvas").style.display = "block
+  document.getElementById("painelSalvas").style.display = "blockBloco 
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ficha de Procedimentos - e-SUS AB</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0B5CAB">
+<style>
+  :root{
+    --azul:#0B5CAB;
+    --azul-claro:#EAF3FC;
+    --azul-escuro:#083D73;
+    --borda:#C7D6E5;
+    --texto:#1B2A38;
+    --cinza:#6B7A8A;
+    --verde:#1E8E5A;
+    --fundo:#F4F7FA;
+    --branco:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',Arial,sans-serif;
+    background:var(--fundo);
+    color:var(--texto);
+    padding-bottom:90px;
+  }
+  header.topo{
+    background:var(--azul);
+    color:#fff;
+    padding:14px 16px;
+    position:sticky;
+    top:0;
+    z-index:20;
+    box-shadow:0 2px 6px rgba(0,0,0,.15);
+  }
+  header.topo h1{
+    margin:0;
+    font-size:17px;
+    font-weight:600;
+  }
+  header.topo p{
+    margin:2px 0 0;
+    font-size:12px;
+    opacity:.85;
+  }
+  .container{
+    max-width:720px;
+    margin:0 auto;
+    padding:14px;
+  }
+  .card{
+    background:var(--branco);
+    border:1px solid var(--borda);
+    border-radius:10px;
+    padding:14px;
+    margin-bottom:14px;
+  }
+  .card h2{
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    color:var(--azul-escuro);
+    margin:0 0 10px;
+    border-bottom:2px solid var(--azul-claro);
+    padding-bottom:6px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px 10px;
+  }
+  .grid .full{grid-column:1/-1;}
+  label{
+    display:block;
+    font-size:11px;
+    color:var(--cinza);
+    margin-bottom:3px;
+    font-weight:600;
+  }
+  input[type=text],input[type=number]{
+    width:100%;
+    padding:8px 9px;
+    border:1px solid var(--borda);
+    border-radius:6px;
+    font-size:14px;
+    background:#fff;
+  }
+  input:focus{outline:2px solid var(--azul);outline-offset:1px;}
+  .radios{display:flex;gap:10px;flex-wrap:wrap;margin-top:2px;}
+  .radios label{
+    display:flex;align-items:center;gap:4px;
+    font-size:13px;font-weight:400;color:var(--texto);
+    background:var(--azul-claro);
+    padding:6px 10px;border-radius:20px;
+    cursor:pointer;
+  }
+  .radios input{margin:0;}
+
+  /* Navegador de atendimentos */
+  .nav-atend{
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    padding:4px 2px 10px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .nav-atend button{
+    flex:0 0 auto;
+    width:42px;height:42px;
+    border-radius:50%;
+    border:2px solid var(--borda);
+    background:#fff;
+    font-weight:700;
+    font-size:14px;
+    color:var(--cinza);
+    position:relative;
+  }
+  .nav-atend button.ativo{
+    background:var(--azul);
+    border-color:var(--azul);
+    color:#fff;
+  }
+  .nav-atend button.preenchido::after{
+    content:'';
+    position:absolute;
+    bottom:-2px;right:-2px;
+    width:10px;height:10px;
+    background:var(--verde);
+    border-radius:50%;
+    border:2px solid #fff;
+  }
+
+  fieldset{
+    border:1px solid var(--borda);
+    border-radius:8px;
+    margin:0 0 10px;
+    padding:6px 10px 10px;
+  }
+  legend{
+    font-size:12px;
+    font-weight:700;
+    color:var(--azul-escuro);
+    padding:0 6px;
+  }
+  .check-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 2px;
+    border-bottom:1px solid #EEF2F6;
+    font-size:13.5px;
+  }
+  .check-item:last-child{border-bottom:none;}
+  .check-item input{width:18px;height:18px;flex:0 0 auto;}
+
+  .barra-acoes{
+    position:fixed;
+    bottom:0;left:0;right:0;
+    background:#fff;
+    border-top:1px solid var(--borda);
+    display:flex;
+    gap:8px;
+    padding:10px 12px;
+    z-index:30;
+    box-shadow:0 -2px 8px rgba(0,0,0,.08);
+  }
+  .barra-acoes button{
+    flex:1;
+    padding:11px 2px;
+    border:none;
+    border-radius:8px;
+    font-size:11.5px;
+    font-weight:700;
+    color:#fff;
+  }
+  .btn-salvar{background:#0B5CAB;}
+  .btn-excel{background:#1E8E5A;}
+  .btn-pdf{background:#B3261E;}
+  .btn-tela{background:var(--azul-escuro);}
+  .btn-limpar{background:#6B7A8A;}
+
+  #avisoSalvo{
+    position:fixed;
+    bottom:70px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:#1E8E5A;
+    color:#fff;
+    padding:9px 18px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:600;
+    opacity:0;
+    transition:opacity .25s, transform .25s;
+    z-index:40;
+    pointer-events:none;
+  }
+  #avisoSalvo.mostrar{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+
+  .status{
+    text-align:center;
+    font-size:11px;
+    color:var(--cinza);
+    margin-top:-6px;
+    margin-bottom:10px;
+  }
+
+  /* Área de impressão / PDF */
+  #areaImpressao{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    #areaImpressao, #areaImpressao *{visibility:visible;}
+    #areaImpressao{display:block;position:absolute;top:0;left:0;width:100%;}
+    table{width:100%;border-collapse:collapse;font-size:9px;}
+    th,td{border:1px solid #333;padding:2px 3px;text-align:center;}
+    th{background:#dceaf7;}
+    td.rotulo{text-align:left;font-size:9px;}
+  }
+  .abas{
+    display:flex;
+    max-width:720px;
+    margin:0 auto;
+    background:var(--branco);
+    border-bottom:1px solid var(--borda);
+  }
+  .aba-btn{
+    flex:1;
+    padding:12px 4px;
+    border:none;
+    background:transparent;
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--cinza);
+    border-bottom:3px solid transparent;
+  }
+  .aba-btn.ativa{
+    color:var(--azul);
+    border-bottom:3px solid var(--azul);
+  }
+  .item-salva{
+    background:var(--branco);
+    border:1px solid var(--borda);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+  }
+  .item-salva .info b{
+    display:block;
+    font-size:14px;
+    color:var(--azul-escuro);
+  }
+  .item-salva .info span{
+    font-size:12px;
+    color:var(--cinza);
+  }
+  .item-salva .acoes{
+    display:flex;
+    gap:6px;
+  }
+  .item-salva button{
+    border:none;
+    border-radius:6px;
+    padding:8px 10px;
+    font-size:12px;
+    font-weight:700;
+    color:#fff;
+  }
+  .item-salva .abrir{background:var(--azul);}
+  .item-salva .excluir{background:#B3261E;}
+  .vazio-lista{
+    text-align:center;
+    color:var(--cinza);
+    font-size:13.5px;
+    padding:30px 10px;
+  }
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <h1>Ficha de Procedimentos</h1>
+  <p>e-SUS AB · Secretaria Municipal de Saúde de Barreirinha</p>
+</header>
+
+<div class="abas">
+  <button id="abaAtualBtn" class="aba-btn ativa" onclick="mostrarAbaAtual()">Ficha atual</button>
+  <button id="abaSalvasBtn" class="aba-btn" onclick="mostrarAbaSalvas()">Fichas salvas</button>
+</div>
+
+<div id="painelAtual" class="container">
+
+  <div class="card">
+    <h2>Dados da Ficha</h2>
+    <div class="grid">
+      <div><label>Digitado por</label><input type="text" id="digitadoPor"></div>
+      <div><label>Data</label><input type="text" id="dataDigitado" placeholder="dd/mm/aaaa"></div>
+      <div><label>Conferido por</label><input type="text" id="conferidoPor"></div>
+      <div><label>Folha Nº</label><input type="text" id="folhaNo"></div>
+      <div><label>CNS do Profissional</label><input type="text" id="cnsProfissional"></div>
+      <div><label>CBO</label><input type="text" id="cbo"></div>
+      <div><label>CNES</label><input type="text" id="cnes"></div>
+      <div><label>INE</label><input type="text" id="ine"></div>
+      <div class="full"><label>Data da Ficha</label><input type="text" id="dataFicha" placeholder="dd/mm/aaaa"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Atendimento</h2>
+    <div class="nav-atend" id="navAtend"></div>
+    <div class="status" id="statusAtend"></div>
+
+    <div class="grid">
+      <div>
+        <label>Turno</label>
+        <div class="radios" id="radiosTurno"></div>
+      </div>
+      <div><label>Nº Prontuário</label><input type="text" id="prontuario"></div>
+      <div class="full"><label>CNS ou CPF do Cidadão</label><input type="text" id="documento" inputmode="numeric"></div>
+      <div><label>Data de nascimento (dia/mês)</label><input type="text" id="nascDiaMes" placeholder="dd/mm"></div>
+      <div><label>Ano de nascimento</label><input type="text" id="nascAno" placeholder="aaaa"></div>
+      <div class="full">
+        <label>Sexo</label>
+        <div class="radios" id="radiosSexo"></div>
+      </div>
+      <div class="full"><label>Local de atendimento</label><input type="text" id="localAtendimento"></div>
+    </div>
+
+    <div class="check-item" style="margin-top:8px;">
+      <input type="checkbox" id="escutaInicial">
+      <span>Escuta inicial/orientação</span>
+    </div>
+
+    <div id="secoesProcedimentos"></div>
+  </div>
+
+</div>
+
+<div id="painelSalvas" class="container" style="display:none;">
+  <div class="card">
+    <h2>Fichas Salvas</h2>
+    <div id="listaFichasSalvas"></div>
+  </div>
+</div>
+
+<div id="areaImpressao"></div>
+
+<div class="barra-acoes">
+  <button class="btn-salvar" onclick="salvarComConfirmacao()">Salvar</button>
+  <button class="btn-excel" onclick="exportarExcel()">Excel</button>
+  <button class="btn-pdf" onclick="gerarPDF()">PDF</button>
+  <button class="btn-tela" onclick="baixarTelaAtual()">Tela</button>
+  <button class="btn-limpar" onclick="limparTudo()">Limpar</button>
+</div>
+<div id="avisoSalvo">Dados salvos ✓</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+const PROCEDIMENTOS = {
+  "Procedimentos/Pequenas cirurgias": [
+    "Acupuntura com inserção de agulhas",
+    "Administração de vitamina A",
+    "Cateterismo vesical de alívio",
+    "Cauterização química de pequenas lesões",
+    "Cirurgia de unha (cantoplastia)",
+    "Cuidado de estomas",
+    "Curativo especial",
+    "Drenagem de abscesso",
+    "Eletrocardiograma",
+    "Coleta de citopatológico de colo uterino",
+    "Exame de Fundo de olho (Fundoscopia)",
+    "Exame do pé diabético",
+    "Exérese/biópsia/punção de tumores superficiais de pele",
+    "Infiltração em cavidade sinovial",
+    "Remoção de corpo estranho da cavidade auditiva e nasal",
+    "Remoção de corpo estranho subcutâneo",
+    "Retirada de cerume",
+    "Retirada de pontos de cirurgias",
+    "Sutura simples",
+    "Tamponamento de epistaxe",
+    "Teste do olhinho (TRV)",
+    "Triagem oftalmológica"
+  ],
+  "Teste rápido": [
+    "De gravidez",
+    "Dosagem de proteinúria",
+    "Para HIV",
+    "Para hepatite C",
+    "Para sífilis"
+  ],
+  "Administração de medicamentos": [
+    "Oral",
+    "Intramuscular",
+    "Endovenosa",
+    "Inalação/Nebulização",
+    "Tópica",
+    "Penicilina para tratamento de sífilis",
+    "Subcutânea (SC)"
+  ],
+  "Procedimentos realizados": [
+    "Verificação de pressão arterial",
+    "Altura",
+    "Temperatura",
+    "Peso",
+    "Glicemia",
+    "Remoção com primeiro atendimento"
+  ]
+};
+
+const CHAVE_STORAGE = "fichaProcedimentos_v1";
+const CHAVE_SALVAS = "fichasProcedimentos_salvas_v1";
+const TOTAL_ATENDIMENTOS = 14;
+
+function novoAtendimento(){
+  return {
+    turno:"", prontuario:"", documento:"",
+    nascDiaMes:"", nascAno:"", sexo:"",
+    localAtendimento:"", escutaInicial:false,
+    procedimentos:{}
+  };
+}
+
+function estadoInicial(){
+  return {
+    header:{digitadoPor:"",dataDigitado:"",conferidoPor:"",folhaNo:"",cnsProfissional:"",cbo:"",cnes:"",ine:"",dataFicha:""},
+    atendimentos: Array.from({length:TOTAL_ATENDIMENTOS}, novoAtendimento)
+  };
+}
+
+let estado = carregarEstado();
+let atual = 1;
+
+function carregarEstado(){
+  try{
+    const bruto = localStorage.getItem(CHAVE_STORAGE);
+    if(bruto) return JSON.parse(bruto);
+  }catch(e){}
+  return estadoInicial();
+}
+
+function salvarEstado(){
+  try{
+    localStorage.setItem(CHAVE_STORAGE, JSON.stringify(estado));
+  }catch(e){ console.error("Falha ao salvar", e); }
+}
+
+function atendimentoTemDados(a){
+  if(a.turno||a.prontuario||a.documento||a.nascDiaMes||a.nascAno||a.sexo||a.localAtendimento||a.escutaInicial) return true;
+  return Object.values(a.procedimentos).some(v=>v);
+}
+
+// ---------- Cabeçalho ----------
+const camposHeader = ["digitadoPor","dataDigitado","conferidoPor","folhaNo","cnsProfissional","cbo","cnes","ine","dataFicha"];
+camposHeader.forEach(id=>{
+  const el = document.getElementById(id);
+  el.value = estado.header[id] || "";
+  el.addEventListener("input", ()=>{ estado.header[id] = el.value; salvarEstado(); });
+});
+
+// ---------- Navegador de atendimentos ----------
+function renderNav(){
+  const nav = document.getElementById("navAtend");
+  nav.innerHTML = "";
+  for(let i=1;i<=TOTAL_ATENDIMENTOS;i++){
+    const b = document.createElement("button");
+    b.textContent = i;
+    if(i===atual) b.classList.add("ativo");
+    if(atendimentoTemDados(estado.atendimentos[i-1])) b.classList.add("preenchido");
+    b.onclick = ()=>{ atual = i; renderNav(); renderAtendimento(); };
+    nav.appendChild(b);
+  }
+  document.getElementById("statusAtend").textContent = `Atendimento ${atual} de ${TOTAL_ATENDIMENTOS}`;
+}
+
+// ---------- Radios turno/sexo ----------
+function renderRadiosTurno(a){
+  const div = document.getElementById("radiosTurno");
+  div.innerHTML = "";
+  [["M","Manhã"],["T","Tarde"],["N","Noite"]].forEach(([v,l])=>{
+    const lab = document.createElement("label");
+    lab.innerHTML = `<input type="radio" name="turno" value="${v}" ${a.turno===v?"checked":""}> ${l}`;
+    lab.querySelector("input").onchange = ()=>{ a.turno=v; salvarEstado(); renderNav(); };
+    div.appendChild(lab);
+  });
+}
+function renderRadiosSexo(a){
+  const div = document.getElementById("radiosSexo");
+  div.innerHTML = "";
+  [["F","Feminino"],["M","Masculino"],["I","Indeterminado"]].forEach(([v,l])=>{
+    const lab = document.createElement("label");
+    lab.innerHTML = `<input type="radio" name="sexo" value="${v}" ${a.sexo===v?"checked":""}> ${l}`;
+    lab.querySelector("input").onchange = ()=>{ a.sexo=v; salvarEstado(); renderNav(); };
+    div.appendChild(lab);
+  });
+}
+
+// ---------- Formulário do atendimento ----------
+function renderAtendimento(){
+  const a = estado.atendimentos[atual-1];
+
+  document.getElementById("prontuario").value = a.prontuario;
+  document.getElementById("documento").value = a.documento;
+  document.getElementById("nascDiaMes").value = a.nascDiaMes;
+  document.getElementById("nascAno").value = a.nascAno;
+  document.getElementById("localAtendimento").value = a.localAtendimento;
+  document.getElementById("escutaInicial").checked = a.escutaInicial;
+
+  renderRadiosTurno(a);
+  renderRadiosSexo(a);
+
+  const secoes = document.getElementById("secoesProcedimentos");
+  secoes.innerHTML = "";
+  Object.entries(PROCEDIMENTOS).forEach(([titulo, lista])=>{
+    const fs = document.createElement("fieldset");
+    const legend = document.createElement("legend");
+    legend.textContent = titulo;
+    fs.appendChild(legend);
+    lista.forEach(nome=>{
+      const item = document.createElement("div");
+      item.className = "check-item";
+      const checked = !!a.procedimentos[nome];
+      item.innerHTML = `<input type="checkbox" ${checked?"checked":""}> <span>${nome}</span>`;
+      item.querySelector("input").onchange = (ev)=>{
+        a.procedimentos[nome] = ev.target.checked;
+        salvarEstado();
+        renderNav();
+      };
+      fs.appendChild(item);
+    });
+    secoes.appendChild(fs);
+  });
+}
+
+function ligarCamposSimples(){
+  const a = ()=> estado.atendimentos[atual-1];
+  document.getElementById("prontuario").addEventListener("input", e=>{ a().prontuario=e.target.value; salvarEstado(); renderNav(); });
+  document.getElementById("documento").addEventListener("input", e=>{ a().documento=e.target.value; salvarEstado(); renderNav(); });
+  document.getElementById("nascDiaMes").addEventListener("input", e=>{ a().nascDiaMes=e.target.value; salvarEstado(); renderNav(); });
+  document.getElementById("nascAno").addEventListener("input", e=>{ a().nascAno=e.target.value; salvarEstado(); renderNav(); });
+  document.getElementById("localAtendimento").addEventListener("input", e=>{ a().localAtendimento=e.target.value; salvarEstado(); renderNav(); });
+  document.getElementById("escutaInicial").addEventListener("change", e=>{ a().escutaInicial=e.target.checked; salvarEstado(); renderNav(); });
+}
+
+function salvarComConfirmacao(){
+  salvarEstado();
+  guardarFichaNaLista();
+  const aviso = document.getElementById("avisoSalvo");
+  aviso.classList.add("mostrar");
+  setTimeout(()=> aviso.classList.remove("mostrar"), 1800);
+}
+
+// ---------- Fichas salvas (histórico) ----------
+function carregarSalvas(){
+  try{
+    const bruto = localStorage.getItem(CHAVE_SALVAS);
+    if(bruto) return JSON.parse(bruto);
+  }catch(e){}
+  return [];
+}
+
+function gravarSalvas(lista){
+  try{ localStorage.setItem(CHAVE_SALVAS, JSON.stringify(lista)); }catch(e){}
+}
+
+function guardarFichaNaLista(){
+  const algumDado = estado.atendimentos.some(atendimentoTemDados) || estado.header.folhaNo || estado.header.dataFicha || estado.header.digitadoPor;
+  if(!algumDado) return;
+  const lista = carregarSalvas();
+  const folha = (estado.header.folhaNo || "").trim();
+  const id = folha ? ("folha-" + folha) : ("sf-" + Date.now());
+  const registro = {
+    id,
+    folhaNo: folha,
+    dataFicha: estado.header.dataFicha || "",
+    atualizadoEm: new Date().toLocaleString("pt-BR"),
+    estado: JSON.parse(JSON.stringify(estado))
+  };
+  const indiceExistente = lista.findIndex(r=> r.id === id);
+  if(indiceExistente >= 0) lista[indiceExistente] = registro;
+  else lista.unshift(registro);
+  gravarSalvas(lista);
+}
+
+function renderListaSalvas(){
+  const lista = carregarSalvas();
+  const container = document.getElementById("listaFichasSalvas");
+  container.innerHTML = "";
+  if(lista.length === 0){
+    container.innerHTML = '<div class="vazio-lista">Nenhuma ficha salva ainda.<br>Preencha os dados e toque em "Salvar".</div>';
+    return;
+  }
+  lista.forEach(registro=>{
+    const item = document.createElement("div");
+    item.className = "item-salva";
+    const titulo = registro.folhaNo ? `Folha Nº ${registro.folhaNo}` : "Sem número de folha";
+    const dataTxt = registro.dataFicha ? ` · ${registro.dataFicha}` : "";
+    item.innerHTML = `
+      <div class="info">
+        <b>${titulo}${dataTxt}</b>
+        <span>Salvo em ${registro.atualizadoEm}</span>
+      </div>
+      <div class="acoes">
+        <button class="abrir">Abrir</button>
+        <button class="excluir">Excluir</button>
+      </div>
+    `;
+    item.querySelector(".abrir").onclick = ()=> abrirFichaSalva(registro.id);
+    item.querySelector(".excluir").onclick = ()=> excluirFichaSalva(registro.id);
+    container.appendChild(item);
+  });
+}
+
+function abrirFichaSalva(id){
+  const lista = carregarSalvas();
+  const registro = lista.find(r=> r.id === id);
+  if(!registro) return;
+  estado = JSON.parse(JSON.stringify(registro.estado));
+  atual = 1;
+  salvarEstado();
+  camposHeader.forEach(campoId=> document.getElementById(campoId).value = estado.header[campoId] || "");
+  renderNav();
+  renderAtendimento();
+  mostrarAbaAtual();
+}
+
+function excluirFichaSalva(id){
+  if(!confirm("Excluir esta ficha salva? Essa ação não pode ser desfeita.")) return;
+  const lista = carregarSalvas().filter(r=> r.id !== id);
+  gravarSalvas(lista);
+  renderListaSalvas();
+}
+
+function mostrarAbaAtual(){
+  document.getElementById("painelAtual").style.display = "block";
+  document.getElementById("painelSalvas").style.display = "none";
+  document.getElementById("abaAtualBtn").classList.add("ativa");
+  document.getElementById("abaSalvasBtn").classList.remove("ativa");
+}
+
+function mostrarAbaSalvas(){
+  document.getElementById("painelAtual").style.display = "none";
+  document.getElementById("painelSalvas").style.display 
