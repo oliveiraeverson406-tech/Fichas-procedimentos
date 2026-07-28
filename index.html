@@ -177,6 +177,7 @@
   .btn-pdf{background:#B3261E;}
   .btn-tela{background:var(--azul-escuro);}
   .btn-limpar{background:#6B7A8A;}
+  .btn-salvar{background:#0B5CAB;}
 
   .status{
     text-align:center;
@@ -197,6 +198,26 @@
     th{background:#dceaf7;}
     td.rotulo{text-align:left;font-size:9px;}
   }
+  #avisoSalvo{
+  position:fixed;
+  bottom:70px;
+  left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:#1E8E5A;
+  color:#fff;
+  padding:9px 18px;
+  border-radius:20px;
+  font-size:13px;
+  font-weight:600;
+  opacity:0;
+  transition:opacity .25s, transform .25s;
+  z-index:40;
+  pointer-events:none;
+}
+#avisoSalvo.mostrar{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
 </style>
 </head>
 <body>
@@ -257,11 +278,13 @@
 <div id="areaImpressao"></div>
 
 <div class="barra-acoes">
+  <button class="btn-salvar" onclick="salvarComConfirmacao()">Salvar</button>
   <button class="btn-excel" onclick="exportarExcel()">Excel</button>
-  <button class="btn-pdf" onclick="gerarPDF()">PDF (tabela)</button>
-  <button class="btn-tela" onclick="baixarTelaAtual()">Baixar tela</button>
+  <button class="btn-pdf" onclick="gerarPDF()">PDF</button>
+  <button class="btn-tela" onclick="baixarTelaAtual()">Tela</button>
   <button class="btn-limpar" onclick="limparTudo()">Limpar</button>
 </div>
+<div id="avisoSalvo">Dados salvos ✓</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -451,6 +474,12 @@ function ligarCamposSimples(){
   document.getElementById("localAtendimento").addEventListener("input", e=>{ a().localAtendimento=e.target.value; salvarEstado(); renderNav(); });
   document.getElementById("escutaInicial").addEventListener("change", e=>{ a().escutaInicial=e.target.checked; salvarEstado(); renderNav(); });
 }
+  function salvarComConfirmacao(){
+  salvarEstado();
+  const aviso = document.getElementById("avisoSalvo");
+  aviso.classList.add("mostrar");
+  setTimeout(()=> aviso.classList.remove("mostrar"), 1800);
+  }
 
 function limparTudo(){
   if(!confirm("Isso vai apagar todos os dados preenchidos nesta ficha. Continuar?")) return;
