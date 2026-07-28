@@ -223,6 +223,67 @@
     th{background:#dceaf7;}
     td.rotulo{text-align:left;font-size:9px;}
   }
+  .abas{
+    display:flex;
+    max-width:720px;
+    margin:0 auto;
+    background:var(--branco);
+    border-bottom:1px solid var(--borda);
+  }
+  .aba-btn{
+    flex:1;
+    padding:12px 4px;
+    border:none;
+    background:transparent;
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--cinza);
+    border-bottom:3px solid transparent;
+  }
+  .aba-btn.ativa{
+    color:var(--azul);
+    border-bottom:3px solid var(--azul);
+  }
+  .item-salva{
+    background:var(--branco);
+    border:1px solid var(--borda);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+  }
+  .item-salva .info b{
+    display:block;
+    font-size:14px;
+    color:var(--azul-escuro);
+  }
+  .item-salva .info span{
+    font-size:12px;
+    color:var(--cinza);
+  }
+  .item-salva .acoes{
+    display:flex;
+    gap:6px;
+  }
+  .item-salva button{
+    border:none;
+    border-radius:6px;
+    padding:8px 10px;
+    font-size:12px;
+    font-weight:700;
+    color:#fff;
+  }
+  .item-salva .abrir{background:var(--azul);}
+  .item-salva .excluir{background:#B3261E;}
+  .vazio-lista{
+    text-align:center;
+    color:var(--cinza);
+    font-size:13.5px;
+    padding:30px 10px;
+  }
 </style>
 </head>
 <body>
@@ -232,7 +293,12 @@
   <p>e-SUS AB · Secretaria Municipal de Saúde de Barreirinha</p>
 </header>
 
-<div class="container">
+<div class="abas">
+  <button id="abaAtualBtn" class="aba-btn ativa" onclick="mostrarAbaAtual()">Ficha atual</button>
+  <button id="abaSalvasBtn" class="aba-btn" onclick="mostrarAbaSalvas()">Fichas salvas</button>
+</div>
+
+<div id="painelAtual" class="container">
 
   <div class="card">
     <h2>Dados da Ficha</h2>
@@ -278,6 +344,13 @@
     <div id="secoesProcedimentos"></div>
   </div>
 
+</div>
+
+<div id="painelSalvas" class="container" style="display:none;">
+  <div class="card">
+    <h2>Fichas Salvas</h2>
+    <div id="listaFichasSalvas"></div>
+  </div>
 </div>
 
 <div id="areaImpressao"></div>
@@ -348,6 +421,7 @@ const PROCEDIMENTOS = {
 };
 
 const CHAVE_STORAGE = "fichaProcedimentos_v1";
+const CHAVE_SALVAS = "fichasProcedimentos_salvas_v1";
 const TOTAL_ATENDIMENTOS = 14;
 
 function novoAtendimento(){
@@ -482,133 +556,100 @@ function ligarCamposSimples(){
 
 function salvarComConfirmacao(){
   salvarEstado();
+  guardarFichaNaLista();
   const aviso = document.getElementById("avisoSalvo");
   aviso.classList.add("mostrar");
   setTimeout(()=> aviso.classList.remove("mostrar"), 1800);
 }
 
-function limparTudo(){
-  if(!confirm("Isso vai apagar todos os dados preenchidos nesta ficha. Continuar?")) return;
-  estado = estadoInicial();
-  camposHeader.forEach(id=> document.getElementById(id).value = "");
+// ---------- Fichas salvas (histórico) ----------
+function carregarSalvas(){
+  try{
+    const bruto = localStorage.getItem(CHAVE_SALVAS);
+    if(bruto) return JSON.parse(bruto);
+  }catch(e){}
+  return [];
+}
+
+function gravarSalvas(lista){
+  try{ localStorage.setItem(CHAVE_SALVAS, JSON.stringify(lista)); }catch(e){}
+}
+
+function guardarFichaNaLista(){
+  const algumDado = estado.atendimentos.some(atendimentoTemDados) || estado.header.folhaNo || estado.header.dataFicha || estado.header.digitadoPor;
+  if(!algumDado) return;
+  const lista = carregarSalvas();
+  const folha = (estado.header.folhaNo || "").trim();
+  const id = folha ? ("folha-" + folha) : ("sf-" + Date.now());
+  const registro = {
+    id,
+    folhaNo: folha,
+    dataFicha: estado.header.dataFicha || "",
+    atualizadoEm: new Date().toLocaleString("pt-BR"),
+    estado: JSON.parse(JSON.stringify(estado))
+  };
+  const indiceExistente = lista.findIndex(r=> r.id === id);
+  if(indiceExistente >= 0) lista[indiceExistente] = registro;
+  else lista.unshift(registro);
+  gravarSalvas(lista);
+}
+
+function renderListaSalvas(){
+  const lista = carregarSalvas();
+  const container = document.getElementById("listaFichasSalvas");
+  container.innerHTML = "";
+  if(lista.length === 0){
+    container.innerHTML = '<div class="vazio-lista">Nenhuma ficha salva ainda.<br>Preencha os dados e toque em "Salvar".</div>';
+    return;
+  }
+  lista.forEach(registro=>{
+    const item = document.createElement("div");
+    item.className = "item-salva";
+    const titulo = registro.folhaNo ? `Folha Nº ${registro.folhaNo}` : "Sem número de folha";
+    const dataTxt = registro.dataFicha ? ` · ${registro.dataFicha}` : "";
+    item.innerHTML = `
+      <div class="info">
+        <b>${titulo}${dataTxt}</b>
+        <span>Salvo em ${registro.atualizadoEm}</span>
+      </div>
+      <div class="acoes">
+        <button class="abrir">Abrir</button>
+        <button class="excluir">Excluir</button>
+      </div>
+    `;
+    item.querySelector(".abrir").onclick = ()=> abrirFichaSalva(registro.id);
+    item.querySelector(".excluir").onclick = ()=> excluirFichaSalva(registro.id);
+    container.appendChild(item);
+  });
+}
+
+function abrirFichaSalva(id){
+  const lista = carregarSalvas();
+  const registro = lista.find(r=> r.id === id);
+  if(!registro) return;
+  estado = JSON.parse(JSON.stringify(registro.estado));
   atual = 1;
   salvarEstado();
+  camposHeader.forEach(campoId=> document.getElementById(campoId).value = estado.header[campoId] || "");
   renderNav();
   renderAtendimento();
+  mostrarAbaAtual();
 }
 
-// ---------- Exportar Excel ----------
-function exportarExcel(){
-  const linhas = [];
-  linhas.push(["FICHA DE PROCEDIMENTOS - e-SUS AB"]);
-  linhas.push(["Digitado por", estado.header.digitadoPor, "Data", estado.header.dataDigitado]);
-  linhas.push(["Conferido por", estado.header.conferidoPor, "Folha Nº", estado.header.folhaNo]);
-  linhas.push(["CNS Profissional", estado.header.cnsProfissional, "CBO", estado.header.cbo, "CNES", estado.header.cnes, "INE", estado.header.ine, "Data", estado.header.dataFicha]);
-  linhas.push([]);
-
-  const cabecalho = ["Item", ...estado.atendimentos.map((_,i)=>`Atend. ${i+1}`)];
-  linhas.push(cabecalho);
-  linhas.push(["Turno", ...estado.atendimentos.map(a=>a.turno)]);
-  linhas.push(["Nº Prontuário", ...estado.atendimentos.map(a=>a.prontuario)]);
-  linhas.push(["CNS/CPF", ...estado.atendimentos.map(a=>a.documento)]);
-  linhas.push(["Nascimento (dia/mês)", ...estado.atendimentos.map(a=>a.nascDiaMes)]);
-  linhas.push(["Ano nascimento", ...estado.atendimentos.map(a=>a.nascAno)]);
-  linhas.push(["Sexo", ...estado.atendimentos.map(a=>a.sexo)]);
-  linhas.push(["Local de atendimento", ...estado.atendimentos.map(a=>a.localAtendimento)]);
-  linhas.push(["Escuta inicial/orientação", ...estado.atendimentos.map(a=>a.escutaInicial?"X":"")]);
-
-  Object.entries(PROCEDIMENTOS).forEach(([titulo, lista])=>{
-    linhas.push([titulo]);
-    lista.forEach(nome=>{
-      linhas.push([nome, ...estado.atendimentos.map(a=>a.procedimentos[nome]?"X":"")]);
-    });
-  });
-
-  const ws = XLSX.utils.aoa_to_sheet(linhas);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Ficha");
-  const nomeArquivo = `ficha-procedimentos-folha${estado.header.folhaNo||"sn"}.xlsx`;
-  XLSX.writeFile(wb, nomeArquivo);
+function excluirFichaSalva(id){
+  if(!confirm("Excluir esta ficha salva? Essa ação não pode ser desfeita.")) return;
+  const lista = carregarSalvas().filter(r=> r.id !== id);
+  gravarSalvas(lista);
+  renderListaSalvas();
 }
 
-// ---------- Baixar exatamente a tela atual (sem reformatar) ----------
-function baixarTelaAtual(){
-  const alvo = document.querySelector(".container");
-  html2canvas(alvo, { scale:2, backgroundColor:"#ffffff" }).then(canvas=>{
-    const { jsPDF } = window.jspdf;
-    const larguraImg = canvas.width;
-    const alturaImg = canvas.height;
-    const doc = new jsPDF({
-      orientation: larguraImg > alturaImg ? "landscape" : "portrait",
-      unit:"px",
-      format:[larguraImg, alturaImg]
-    });
-    doc.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, larguraImg, alturaImg);
-    doc.save(`ficha-atendimento-${atual}.pdf`);
-  }).catch(err=>{
-    alert("Não foi possível gerar o PDF da tela. Detalhe: " + err);
-  });
+function mostrarAbaAtual(){
+  document.getElementById("painelAtual").style.display = "block";
+  document.getElementById("painelSalvas").style.display = "none";
+  document.getElementById("abaAtualBtn").classList.add("ativa");
+  document.getElementById("abaSalvasBtn").classList.remove("ativa");
 }
 
-// ---------- Gerar PDF (montado direto com jsPDF, sem depender da impressão do Android) ----------
-function gerarPDF(){
-  const h = estado.header;
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation:"landscape", unit:"pt", format:"a4" });
-
-  doc.setFontSize(13);
-  doc.text("FICHA DE PROCEDIMENTOS - e-SUS AB", 20, 25);
-  doc.setFontSize(8);
-  doc.text(
-    `Digitado por: ${h.digitadoPor||""}   Data: ${h.dataDigitado||""}   Conferido por: ${h.conferidoPor||""}   Folha Nº: ${h.folhaNo||""}`,
-    20, 38
-  );
-  doc.text(
-    `CNS Profissional: ${h.cnsProfissional||""}   CBO: ${h.cbo||""}   CNES: ${h.cnes||""}   INE: ${h.ine||""}   Data: ${h.dataFicha||""}`,
-    20, 48
-  );
-
-  const colunas = ["Item", ...estado.atendimentos.map((_,i)=>String(i+1))];
-  const linhas = [];
-  linhas.push(["Turno", ...estado.atendimentos.map(a=>a.turno||"")]);
-  linhas.push(["Nº Prontuário", ...estado.atendimentos.map(a=>a.prontuario||"")]);
-  linhas.push(["CNS/CPF", ...estado.atendimentos.map(a=>a.documento||"")]);
-  linhas.push(["Nascimento", ...estado.atendimentos.map(a=>`${a.nascDiaMes||""}/${a.nascAno||""}`)]);
-  linhas.push(["Sexo", ...estado.atendimentos.map(a=>a.sexo||"")]);
-  linhas.push(["Local", ...estado.atendimentos.map(a=>a.localAtendimento||"")]);
-  linhas.push(["Escuta inicial", ...estado.atendimentos.map(a=>a.escutaInicial?"X":"")]);
-
-  Object.entries(PROCEDIMENTOS).forEach(([titulo, lista])=>{
-    linhas.push([{content:titulo, colSpan:colunas.length, styles:{fillColor:[234,243,252], fontStyle:"bold", halign:"left"}}]);
-    lista.forEach(nome=>{
-      linhas.push([nome, ...estado.atendimentos.map(a=>a.procedimentos[nome]?"X":"")]);
-    });
-  });
-
-  doc.autoTable({
-    head:[colunas],
-    body:linhas,
-    startY:56,
-    styles:{ fontSize:6, cellPadding:2, halign:"center" },
-    columnStyles:{ 0:{ halign:"left", cellWidth:110 } },
-    headStyles:{ fillColor:[11,92,171] }
-  });
-
-  const nomeArquivo = `ficha-procedimentos-folha${h.folhaNo||"sn"}.pdf`;
-  doc.save(nomeArquivo);
-}
-
-// ---------- Inicialização ----------
-ligarCamposSimples();
-renderNav();
-renderAtendimento();
-
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
-  });
-}
-</script>
-
-</body>
-</html>
+function mostrarAbaSalvas(){
+  document.getElementById("painelAtual").style.display = "none";
+  document.getElementById("painelSalvas").style.display = "block
