@@ -212,6 +212,60 @@
     margin-bottom:10px;
   }
 
+  .totais-grupo{margin-bottom:10px;}
+  .totais-grupo h3{
+    font-size:12px;
+    color:var(--azul-escuro);
+    margin:0 0 4px;
+  }
+  .totais-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:5px 2px;
+    border-bottom:1px solid #EEF2F6;
+    font-size:13px;
+  }
+  .totais-item:last-child{border-bottom:none;}
+  .totais-item .qtd{
+    font-weight:700;
+    color:var(--azul);
+    background:var(--azul-claro);
+    padding:2px 10px;
+    border-radius:12px;
+    min-width:28px;
+    text-align:center;
+  }
+  .totais-item .qtd.zero{color:var(--cinza);background:#F0F3F6;}
+
+  .historico-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    padding:9px 4px;
+    border-bottom:1px solid #EEF2F6;
+  }
+  .historico-item:last-child{border-bottom:none;}
+  .historico-info{font-size:13px;line-height:1.4;}
+  .historico-info b{color:var(--azul-escuro);}
+  .historico-acoes{display:flex;gap:6px;flex:0 0 auto;}
+  .historico-acoes button{
+    border:none;
+    border-radius:6px;
+    padding:7px 10px;
+    font-size:12px;
+    font-weight:700;
+    color:#fff;
+  }
+  .btn-abrir{background:var(--azul);}
+  .btn-excluir{background:#B3261E;}
+  .historico-vazio{
+    font-size:13px;
+    color:var(--cinza);
+    padding:6px 2px;
+  }
+
   /* Área de impressão / PDF */
   #areaImpressao{display:none;}
   @media print{
@@ -276,6 +330,16 @@
     </div>
 
     <div id="secoesProcedimentos"></div>
+  </div>
+
+  <div class="card">
+    <h2>Totais Gerais (soma de todos os atendimentos)</h2>
+    <div id="totaisLista"></div>
+  </div>
+
+  <div class="card">
+    <h2>Fichas Salvas (guardadas no aplicativo)</h2>
+    <div id="listaHistorico"></div>
   </div>
 
 </div>
@@ -348,7 +412,8 @@ const PROCEDIMENTOS = {
 };
 
 const CHAVE_STORAGE = "fichaProcedimentos_v1";
-const TOTAL_ATENDIMENTOS = 30;
+const CHAVE_HISTORICO = "fichaProcedimentos_historico_v1";
+const TOTAL_ATENDIMENTOS = 35;
 
 function novoAtendimento(){
   return {
@@ -372,7 +437,20 @@ let atual = 1;
 function carregarEstado(){
   try{
     const bruto = localStorage.getItem(CHAVE_STORAGE);
-    if(bruto) return JSON.parse(bruto);
+    if(bruto){
+      const salvo = JSON.parse(bruto);
+      if(!salvo.atendimentos) salvo.atendimentos = [];
+      // Completa o array caso o total salvo seja menor que TOTAL_ATENDIMENTOS atual
+      while(salvo.atendimentos.length < TOTAL_ATENDIMENTOS){
+        salvo.atendimentos.push(novoAtendimento());
+      }
+      // Corta o array caso o total salvo seja maior (evita índices fora do range em relatórios)
+      if(salvo.atendimentos.length > TOTAL_ATENDIMENTOS){
+        salvo.atendimentos = salvo.atendimentos.slice(0, TOTAL_ATENDIMENTOS);
+      }
+      if(!salvo.header) salvo.header = estadoInicial().header;
+      return salvo;
+    }
   }catch(e){}
   return estadoInicial();
 }
@@ -463,10 +541,51 @@ function renderAtendimento(){
         a.procedimentos[nome] = ev.target.checked;
         salvarEstado();
         renderNav();
+        renderTotais();
       };
       fs.appendChild(item);
     });
     secoes.appendChild(fs);
+  });
+}
+
+// ---------- Totais gerais (soma de cada procedimento em todos os atendimentos) ----------
+function calcularTotais(){
+  const totais = {};
+  Object.entries(PROCEDIMENTOS).forEach(([titulo, lista])=>{
+    totais[titulo] = {};
+    lista.forEach(nome=>{ totais[titulo][nome] = 0; });
+  });
+  totais["Outros"] = { "Escuta inicial/orientação": 0 };
+
+  estado.atendimentos.forEach(a=>{
+    if(a.escutaInicial) totais["Outros"]["Escuta inicial/orientação"]++;
+    Object.entries(PROCEDIMENTOS).forEach(([titulo, lista])=>{
+      lista.forEach(nome=>{
+        if(a.procedimentos[nome]) totais[titulo][nome]++;
+      });
+    });
+  });
+  return totais;
+}
+
+function renderTotais(){
+  const totais = calcularTotais();
+  const container = document.getElementById("totaisLista");
+  container.innerHTML = "";
+  Object.entries(totais).forEach(([titulo, itens])=>{
+    const grupo = document.createElement("div");
+    grupo.className = "totais-grupo";
+    const h3 = document.createElement("h3");
+    h3.textContent = titulo;
+    grupo.appendChild(h3);
+    Object.entries(itens).forEach(([nome, qtd])=>{
+      const linha = document.createElement("div");
+      linha.className = "totais-item";
+      linha.innerHTML = `<span>${nome}</span><span class="qtd ${qtd===0?"zero":""}">${qtd}</span>`;
+      grupo.appendChild(linha);
+    });
+    container.appendChild(grupo);
   });
 }
 
@@ -477,138 +596,58 @@ function ligarCamposSimples(){
   document.getElementById("nascDiaMes").addEventListener("input", e=>{ a().nascDiaMes=e.target.value; salvarEstado(); renderNav(); });
   document.getElementById("nascAno").addEventListener("input", e=>{ a().nascAno=e.target.value; salvarEstado(); renderNav(); });
   document.getElementById("localAtendimento").addEventListener("input", e=>{ a().localAtendimento=e.target.value; salvarEstado(); renderNav(); });
-  document.getElementById("escutaInicial").addEventListener("change", e=>{ a().escutaInicial=e.target.checked; salvarEstado(); renderNav(); });
+  document.getElementById("escutaInicial").addEventListener("change", e=>{ a().escutaInicial=e.target.checked; salvarEstado(); renderNav(); renderTotais(); });
 }
 
-function salvarComConfirmacao(){
-  salvarEstado();
-  const aviso = document.getElementById("avisoSalvo");
-  aviso.classList.add("mostrar");
-  setTimeout(()=> aviso.classList.remove("mostrar"), 1800);
+// ---------- Histórico de fichas guardadas no aplicativo ----------
+function carregarHistorico(){
+  try{
+    const bruto = localStorage.getItem(CHAVE_HISTORICO);
+    if(bruto) return JSON.parse(bruto);
+  }catch(e){}
+  return [];
 }
 
-function limparTudo(){
-  if(!confirm("Isso vai apagar todos os dados preenchidos nesta ficha. Continuar?")) return;
-  estado = estadoInicial();
-  camposHeader.forEach(id=> document.getElementById(id).value = "");
-  atual = 1;
-  salvarEstado();
-  renderNav();
-  renderAtendimento();
+function salvarHistorico(lista){
+  try{
+    localStorage.setItem(CHAVE_HISTORICO, JSON.stringify(lista));
+  }catch(e){ console.error("Falha ao salvar histórico", e); }
 }
 
-// ---------- Exportar Excel ----------
-function exportarExcel(){
-  const linhas = [];
-  linhas.push(["FICHA DE PROCEDIMENTOS - e-SUS AB"]);
-  linhas.push(["Digitado por", estado.header.digitadoPor, "Data", estado.header.dataDigitado]);
-  linhas.push(["Conferido por", estado.header.conferidoPor, "Folha Nº", estado.header.folhaNo]);
-  linhas.push(["CNS Profissional", estado.header.cnsProfissional, "CBO", estado.header.cbo, "CNES", estado.header.cnes, "INE", estado.header.ine, "Data", estado.header.dataFicha]);
-  linhas.push([]);
+function guardarFichaAtual(){
+  const historico = carregarHistorico();
+  const dataFicha = (estado.header.dataFicha || "").trim() || "Sem data";
+  const folhaNo = (estado.header.folhaNo || "").trim();
 
-  const cabecalho = ["Item", ...estado.atendimentos.map((_,i)=>`Atend. ${i+1}`)];
-  linhas.push(cabecalho);
-  linhas.push(["Turno", ...estado.atendimentos.map(a=>a.turno)]);
-  linhas.push(["Nº Prontuário", ...estado.atendimentos.map(a=>a.prontuario)]);
-  linhas.push(["CNS/CPF", ...estado.atendimentos.map(a=>a.documento)]);
-  linhas.push(["Nascimento (dia/mês)", ...estado.atendimentos.map(a=>a.nascDiaMes)]);
-  linhas.push(["Ano nascimento", ...estado.atendimentos.map(a=>a.nascAno)]);
-  linhas.push(["Sexo", ...estado.atendimentos.map(a=>a.sexo)]);
-  linhas.push(["Local de atendimento", ...estado.atendimentos.map(a=>a.localAtendimento)]);
-  linhas.push(["Escuta inicial/orientação", ...estado.atendimentos.map(a=>a.escutaInicial?"X":"")]);
+  const registro = {
+    id: Date.now(),
+    dataFicha: dataFicha,
+    folhaNo: folhaNo,
+    salvoEm: new Date().toISOString(),
+    header: JSON.parse(JSON.stringify(estado.header)),
+    atendimentos: JSON.parse(JSON.stringify(estado.atendimentos))
+  };
 
-  Object.entries(PROCEDIMENTOS).forEach(([titulo, lista])=>{
-    linhas.push([titulo]);
-    lista.forEach(nome=>{
-      linhas.push([nome, ...estado.atendimentos.map(a=>a.procedimentos[nome]?"X":"")]);
-    });
-  });
+  // Se já existir uma ficha guardada com a mesma Data da Ficha + Folha Nº, substitui (evita duplicar)
+  const indiceExistente = historico.findIndex(f => f.dataFicha === dataFicha && f.folhaNo === folhaNo);
+  if(indiceExistente >= 0){
+    historico[indiceExistente] = registro;
+  } else {
+    historico.push(registro);
+  }
 
-  const ws = XLSX.utils.aoa_to_sheet(linhas);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Ficha");
-  const nomeArquivo = `ficha-procedimentos-folha${estado.header.folhaNo||"sn"}.xlsx`;
-  XLSX.writeFile(wb, nomeArquivo);
+  salvarHistorico(historico);
+  renderHistorico();
 }
 
-// ---------- Baixar exatamente a tela atual (sem reformatar) ----------
-function baixarTelaAtual(){
-  const alvo = document.querySelector(".container");
-  html2canvas(alvo, { scale:2, backgroundColor:"#ffffff" }).then(canvas=>{
-    const { jsPDF } = window.jspdf;
-    const larguraImg = canvas.width;
-    const alturaImg = canvas.height;
-    const doc = new jsPDF({
-      orientation: larguraImg > alturaImg ? "landscape" : "portrait",
-      unit:"px",
-      format:[larguraImg, alturaImg]
-    });
-    doc.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, larguraImg, alturaImg);
-    doc.save(`ficha-atendimento-${atual}.pdf`);
-  }).catch(err=>{
-    alert("Não foi possível gerar o PDF da tela. Detalhe: " + err);
-  });
-}
+function renderHistorico(){
+  const historico = carregarHistorico();
+  const container = document.getElementById("listaHistorico");
+  container.innerHTML = "";
 
-// ---------- Gerar PDF (montado direto com jsPDF, sem depender da impressão do Android) ----------
-function gerarPDF(){
-  const h = estado.header;
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation:"landscape", unit:"pt", format:"a4" });
+  if(historico.length === 0){
+    container.innerHTML = `<div class="historico-vazio">Nenhuma ficha guardada ainda.</div>`;
+    return;
+  }
 
-  doc.setFontSize(13);
-  doc.text("FICHA DE PROCEDIMENTOS - e-SUS AB", 20, 25);
-  doc.setFontSize(8);
-  doc.text(
-    `Digitado por: ${h.digitadoPor||""}   Data: ${h.dataDigitado||""}   Conferido por: ${h.conferidoPor||""}   Folha Nº: ${h.folhaNo||""}`,
-    20, 38
-  );
-  doc.text(
-    `CNS Profissional: ${h.cnsProfissional||""}   CBO: ${h.cbo||""}   CNES: ${h.cnes||""}   INE: ${h.ine||""}   Data: ${h.dataFicha||""}`,
-    20, 48
-  );
-
-  const colunas = ["Item", ...estado.atendimentos.map((_,i)=>String(i+1))];
-  const linhas = [];
-  linhas.push(["Turno", ...estado.atendimentos.map(a=>a.turno||"")]);
-  linhas.push(["Nº Prontuário", ...estado.atendimentos.map(a=>a.prontuario||"")]);
-  linhas.push(["CNS/CPF", ...estado.atendimentos.map(a=>a.documento||"")]);
-  linhas.push(["Nascimento", ...estado.atendimentos.map(a=>`${a.nascDiaMes||""}/${a.nascAno||""}`)]);
-  linhas.push(["Sexo", ...estado.atendimentos.map(a=>a.sexo||"")]);
-  linhas.push(["Local", ...estado.atendimentos.map(a=>a.localAtendimento||"")]);
-  linhas.push(["Escuta inicial", ...estado.atendimentos.map(a=>a.escutaInicial?"X":"")]);
-
-  Object.entries(PROCEDIMENTOS).forEach(([titulo, lista])=>{
-    linhas.push([{content:titulo, colSpan:colunas.length, styles:{fillColor:[234,243,252], fontStyle:"bold", halign:"left"}}]);
-    lista.forEach(nome=>{
-      linhas.push([nome, ...estado.atendimentos.map(a=>a.procedimentos[nome]?"X":"")]);
-    });
-  });
-
-  doc.autoTable({
-    head:[colunas],
-    body:linhas,
-    startY:56,
-    styles:{ fontSize:6, cellPadding:2, halign:"center" },
-    columnStyles:{ 0:{ halign:"left", cellWidth:110 } },
-    headStyles:{ fillColor:[11,92,171] }
-  });
-
-  const nomeArquivo = `ficha-procedimentos-folha${h.folhaNo||"sn"}.pdf`;
-  doc.save(nomeArquivo);
-}
-
-// ---------- Inicialização ----------
-ligarCamposSimples();
-renderNav();
-renderAtendimento();
-
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
-  });
-}
-</script>
-
-</body>
-</html>
+  // Ordena por Da
