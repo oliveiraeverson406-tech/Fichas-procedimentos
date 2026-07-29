@@ -714,7 +714,11 @@ function renderHistorico(){
 }
 
 function abrirFicha(idFicha){
-  if(!confirm("Isso vai substituir a ficha que está aberta agora pela ficha guardada. Continuar?")) return;
+  if(!confirm("Vou guardar automaticamente o que está preenchido agora antes de trocar. Continuar?")) return;
+
+  // Guarda o progresso atual primeiro, pra não perder nada que não foi salvo ainda
+  guardarFichaAtual();
+
   const historico = carregarHistorico();
   const registro = historico.find(f=>f.id===idFicha);
   if(!registro) return;
